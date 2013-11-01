@@ -1,0 +1,291 @@
+<html>
+     <script src="jquery-2.0.3.min.js"></script>
+     <link rel="stylesheet" type="text/css" href="DropDownMenu.css">
+    <head>
+        <title>Three.js L-Systems</title>
+        <style>canvas { width: 100%; height: 100% }</style>
+
+    </head>
+
+    <body>
+    <script src="three.js"></script>
+    <script src="L-Systems/L-System.js"></script>
+    <script src="L-Systems/ProductionRule.js"></script>
+    <script src="L-Systems/DrawingRule.js"></script>
+    <script src="L-Systems/StackRule.js"></script>
+    <script src="stats.min.js"></script>
+    <script>
+    try{
+
+        //stats
+        var stats;
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.top = '0px';
+        document.body.appendChild( stats.domElement );
+
+        //initialize scene and camera
+        var scene = new THREE.Scene;
+        var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        var light = new THREE.DirectionalLight( 0xffffff );
+        light.position.set( 0, 0, 1 );
+        scene.add( light );
+
+
+        //set up some l systems
+        /*
+    	var Koch = new LSystem();
+    	Koch.addVariable("F");
+    	Koch.addConstant("+");
+    	Koch.addConstant("-");
+    	var KRule1 = new ProductionRule("F", "F+F-F-F+F");
+    	Koch.defineProductionRule(KRule1);
+        var KDRule1 = new DrawingRule("+", false, true, 90, new THREE.Vector3(0,0,1));
+        var KDRule2 = new DrawingRule("-", false, true, -90, new THREE.Vector3(0,0,1));
+        var KDRule3 = new DrawingRule("F", true, false, null, null);
+        Koch.defineDrawingRule(KDRule1);
+        Koch.defineDrawingRule(KDRule2);
+        Koch.defineDrawingRule(KDRule3);
+
+    	var KochInitialString = "F";
+    	for(var i = 0; i < 8; i ++){
+    		KochInitialString = Koch.applyProductionRules(KochInitialString);
+    	}
+        Koch.drawSystem(KochInitialString, scene, new THREE.Vector3(1,0,0));
+        */
+
+        /*
+    	var Sierpinski = new LSystem();
+    	Sierpinski.addVariable("A");
+    	Sierpinski.addVariable("B");
+    	Sierpinski.addConstant("+");
+    	Sierpinski.addConstant("-");
+    	var SRule1 = new ProductionRule("A", "B-A-B");
+    	var SRule2 = new ProductionRule("B", "A+B+A");
+    	Sierpinski.defineProductionRule(SRule1);
+    	Sierpinski.defineProductionRule(SRule2);
+        var SDRule1 = new DrawingRule("+", false, true, 60, new THREE.Vector3(0,0,1));
+        var SDRule2 = new DrawingRule("-", false, true, -60, new THREE.Vector3(0,0,1));
+        var SDRule3 = new DrawingRule("A", true, false, null, null);
+        var SDRule4 = new DrawingRule("B", true, false, null, null);
+        Sierpinski.defineDrawingRule(SDRule1);
+        Sierpinski.defineDrawingRule(SDRule2);
+        Sierpinski.defineDrawingRule(SDRule3);
+        Sierpinski.defineDrawingRule(SDRule4);
+    	
+        var SierpinskiInitialString = "A";
+        for(var i = 0; i < 9; i ++){
+            SierpinskiInitialString = Sierpinski.applyProductionRules(SierpinskiInitialString);
+        }
+        Sierpinski.drawSystem(SierpinskiInitialString, scene, new THREE.Vector3(1,0,0));
+        */
+
+        var Plant = new LSystem();
+        Plant.addVariable("X");
+        Plant.addVariable("F");
+        Plant.addConstant("+");
+        Plant.addConstant("-");
+        Plant.addConstant("[");
+        Plant.addConstant("]");
+        Plant.addConstant("*");
+        Plant.addConstant("&");
+        var PRule1 = new ProductionRule("X", "F-[*[X]+X]+*F[+FX]-X", .5);
+        PRule1.addRule("X", "F-[&[X]+X]+&F[+FX]-X", .5);
+        var PRule2 = new ProductionRule("F", "FF");
+        Plant.defineProductionRule(PRule1);
+        Plant.defineProductionRule(PRule2);
+        var PDRule1 = new DrawingRule("F", true, false, null, null);
+        var PDRule2 = new DrawingRule("-", false, true, 25, new THREE.Vector3(0,0,1));
+        var PDRule3 = new DrawingRule("+", false, true, -25, new THREE.Vector3(0,0,1));
+        var PDRule4 = new DrawingRule("*", false, true, 35, new THREE.Vector3(0, 1, 1));
+        var PDRule4 = new DrawingRule("&", false, true, -35, new THREE.Vector3(1, 0, 1));
+        Plant.defineDrawingRule(PDRule1);
+        Plant.defineDrawingRule(PDRule2);
+        Plant.defineDrawingRule(PDRule3);
+        Plant.defineDrawingRule(PDRule4);
+        var PSRule1 = new StackRule("[", true);
+        var PSRule2 = new StackRule("]", false);
+        Plant.defineStackRule(PSRule1);
+        Plant.defineStackRule(PSRule2);
+
+        var PlantInitialString = "X";
+        for(var i = 0; i < 7; i ++){
+            PlantInitialString = Plant.applyProductionRules(PlantInitialString);
+        }
+
+        Plant.drawSystem(PlantInitialString, scene, new THREE.Vector3(0,1,0));
+
+
+    	
+
+        //keypresses
+        var W_Down = false;
+        var A_Down = false;
+        var S_Down = false;
+        var D_Down = false;
+        var Q_Down = false;
+        var E_Down = false;
+        var Control_Down = false;
+        var Space_Down = false;
+
+        //selecting a renderer to use
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        renderer.gammaInput = true;
+        renderer.gammaOutput = true;
+        renderer.physicallyBasedShading = true;
+
+        camera.position.z = 10;
+
+        function render () {
+            try{
+                //camera movement code
+                if(Q_Down){
+                    //rotate left
+                    camera.rotation.y += 0.05;
+                }
+                if(E_Down){
+                    //rotate right
+                    camera.rotation.y -= 0.05;
+                }
+                if(W_Down){
+                    var forwardVector = new THREE.Vector3(0, 0, -0.9);
+                    var rotationMatrix = new THREE.Matrix4();
+                    rotationMatrix.makeRotationFromEuler(camera.rotation);
+                    forwardVector.applyMatrix4(rotationMatrix);
+                    camera.position.add(forwardVector);
+                }
+                if(S_Down){
+                    var forwardVector = new THREE.Vector3(0, 0, 0.9);
+                    var rotationMatrix = new THREE.Matrix4();
+                    rotationMatrix.makeRotationFromEuler(camera.rotation);
+                    forwardVector.applyMatrix4(rotationMatrix);
+                    camera.position.add(forwardVector);
+                }
+                if(A_Down){
+                    var forwardVector = new THREE.Vector3(-0.9, 0, 0);
+                    var rotationMatrix = new THREE.Matrix4();
+                    rotationMatrix.makeRotationFromEuler(camera.rotation);
+                    forwardVector.applyMatrix4(rotationMatrix);
+                    camera.position.add(forwardVector);
+                }
+                if(D_Down){
+                    var forwardVector = new THREE.Vector3(0.9, 0, 0);
+                    var rotationMatrix = new THREE.Matrix4();
+                    rotationMatrix.makeRotationFromEuler(camera.rotation);
+                    forwardVector.applyMatrix4(rotationMatrix);
+                    camera.position.add(forwardVector);
+                }
+                if(Space_Down){
+                    camera.position.y += 0.9;
+                }
+                if(Control_Down){
+                    camera.position.y -= 0.9;
+                }
+
+            }
+            catch(Error){
+                alert(Error);
+            }
+            
+            stats.update();
+
+            requestAnimationFrame(render);
+            //cube.rotation.x += 0.01; cube.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        }
+        render();
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize( window.innerWidth, window.innerHeight );
+
+        }
+
+        function onDocumentKeyDown( event ) {
+            switch( event.keyCode ) {
+                case 87: //'w'
+                    W_Down = true;
+                    break;
+                case 65: //'a'
+                    A_Down = true;
+                    break;
+                case 83: //'s'
+                    S_Down = true;
+                    break;
+                case 68: //'d'
+                    D_Down = true;
+                    break;
+                case 81: //'q'
+                    Q_Down = true;
+                    break;
+                case 69: //'e'
+                    E_Down = true;
+                    break;
+                case 32: //' '
+                    Space_Down = true;
+                    break;
+                case 17: //'left control'
+                    Control_Down = true;
+                    break;
+            }
+        }
+
+        function onDocumentKeyUp( event ) {
+            switch( event.keyCode ) {
+                case 87: //'w'
+                    W_Down = false;
+                    break;
+                case 65: //'a'
+                    A_Down = false;
+                    break;
+                case 83: //'s'
+                    S_Down = false;
+                    break;
+                case 68: //'d'
+                    D_Down = false;
+                    break;
+                case 81: //'q'
+                    Q_Down = false;
+                    break;
+                case 69: //'e'
+                    E_Down = false;
+                    break;
+                case 32: //' '
+                    Space_Down = false;
+                    break;
+                case 17: //'left control'
+                    Control_Down = false;
+                    break;
+            }
+        }
+
+        //preventing ctrl + char shortcuts
+        onkeydown = function(e){
+        if(e.ctrlKey){
+            e.preventDefault();
+            //your saving code
+            }
+        }
+
+
+
+        //listeners for events
+        window.addEventListener( 'resize', onWindowResize, false );
+        document.addEventListener( 'keydown', onDocumentKeyDown, false );
+        document.addEventListener( 'keyup', onDocumentKeyUp, false );
+
+    }
+    catch(Error){
+        alert(Error);
+        throw Error;
+    }
+    
+
+    </script>
+</body>
+</html>
